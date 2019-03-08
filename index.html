@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Web-Cat</title>
+    <style>
+    #app {
+        padding: 20px;
+        text-align: center;
+        background-color: #eee;
+        position: absolute;
+        overflow: scroll;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+    }
+
+    h1 {
+        margin: 0;
+        padding-bottom: 20px;
+        font-size: 25px;
+        text-align: center;
+    }
+
+    #form {
+        width: 60%;
+        min-width: 680px;
+        margin: 0 auto;
+    }
+
+    .content-type {
+        float: left;
+        margin: 15px 0;
+        text-align: left;
+    }
+
+    .content-type span {
+        display: inline-block;
+        text-align: right;
+        margin-right: 10px;
+        height: 30px;
+        line-height: 30px;
+        font-size: 14px;
+    }
+
+    .content-type input {
+        height: 25px;
+        font-size: 14px;
+        outline: none;
+        min-width: 300px;
+        border-radius: 3px;
+        padding-left: 5px;
+        border: 1px solid #888;
+    }
+
+    .status {
+        margin: 15px 0;
+        font-size: 14px;
+        line-height: 30px;
+        float: right;
+        background-color: #e0e0e0;
+        border-radius: 5px;
+        padding: 0 10px;
+    }
+
+    .status a {
+        color: #00e;
+        margin: 0 5px;
+    }
+
+    .close {
+        width: 14px;
+        height: 14px;
+        line-height: 12px;
+        font-size: 15px;
+        font-style: normal;
+        text-align: center;
+        display: inline-block;
+        vertical-align: 1px;
+        border: 1px solid #333;
+        cursor: pointer;
+        border-radius: 2px;
+    }
+
+    .close:hover {
+        color: #e00;
+        border-color: #888;
+    }
+
+    .content textarea {
+        width: 100%;
+        height: 300px;
+        outline: none;
+        font-size: 14px;
+        resize: none;
+        border-radius: 3px;
+        padding: 5px;
+    }
+
+    .submit {
+        margin: 10px 0;
+        width: 200px;
+        height: 35px;
+        font-size: 14px;
+        border-radius: 5px;
+        outline: none;
+        color: #fff;
+        background-color: #66f;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .submit:active {
+        background-color: #88f;
+    }
+
+
+    .history a {
+        color: #2d00f8;
+        width: 200px;
+        display: inline-block;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .history a:hover {
+        color: #e00;
+    }
+
+    .history a.active {
+        font-weight: bold;
+        color: #e00;
+    }
+
+    .history .key {
+        text-align: right;
+    }
+
+    .history .delete {
+        text-align: left;
+        margin-left: 20px;
+    }
+
+    #message {
+        text-align: center;
+        padding: 10px 20px;
+        position: fixed;
+        top: 50px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #fff;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px #888;
+        opacity: 0;
+        transition: opacity .3s;
+    }
+
+    #message.error,
+    #message.success {
+        opacity: 1;
+    }
+
+    .icon {
+        color: #fff;
+        width: 16px;
+        height: 16px;
+        line-height: 16px;
+        font-size: 12px;
+        font-style: normal;
+        text-align: center;
+        display: inline-block;
+        vertical-align: 1px;
+        cursor: pointer;
+        margin-right: 3px;
+        border-radius: 50%;
+    }
+
+    .error .icon {
+        background-color:#f5222d;
+    }
+
+    .success .icon {
+        background-color: #52c41a;
+    }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>Web Cat</h1>
+        <div id="form">
+            <div class="content-type">
+                <span>Content-Type:</span>
+                <input v-model="contentType" list="contentTypes" />
+                <datalist id="contentTypes">
+                    <option>text/plain</option>
+                    <option>text/html</option>
+                    <option>application/json</option>
+                </datalist>
+            </div>
+            <span class="status" v-if="dataKey">
+                Update <a :href="'/' + dataKey" target="_blank">{{dataKey}}</a>
+                <span class="close" @click="reset()">x</span>
+            </span>
+            <span class="status" v-else>Create New</span>
+            <div class="content">
+                <textarea v-model="content"></textarea>
+            </div>
+            <button class="submit" @click="submit()">
+                {{dataKey ? 'Update' : 'Create'}}
+            </button>
+        </div>
+        <div class="history">
+            <div v-for="item in dataKeys">
+                <a class="key" :class="dataKey === item ? 'active' : ''" @click="choose(item)">{{item}}</a>
+                <a class="delete" @click="remove(item)">Delete</a>
+            </div>
+        </div>
+        <div id="message" :class="message.type">
+            <span class="icon">{{message.type === 'error' ? '✘' : '✔'}}</span>
+            {{message.content}}
+        </div>
+    </div>
+
+    <script src="https://code.bdstatic.com/npm/vue@2.6.8/dist/vue.min.js"></script>
+    <script>
+        function syncStore(dataKeys) {
+            try {
+                if (dataKeys) {
+                    window.localStorage.setItem('dataKeys', JSON.stringify(dataKeys));
+                }
+
+                return JSON.parse(window.localStorage.getItem('dataKeys')) || [];
+            } catch (e) {
+                return [];
+            }
+        };
+
+        new Vue({
+            el: '#app',
+            data: {
+                contentTypes: ['text/plain', 'text/html', 'application/json'],
+                contentType: 'text/plain',
+                content: '',
+                dataKeys: syncStore(),
+                dataKey: '',
+                error: null
+            },
+            computed: {
+                message() {
+                    if (!this.error) {
+                        return {};
+                    }
+
+                    if (window.timer) clearTimeout(window.timer);
+                    window.timer = setTimeout(() => this.error = null, 3000);
+                    return {type: this.error.code ? 'error' : 'success', content: this.error.message};
+                }
+            },
+            methods: {
+                choose(dataKey) {
+                    fetch('/' + dataKey).then(res => {
+                        if (res.status === 200) {
+                            return res.text().then(text => {
+                                this.contentType = res.headers.get('Content-Type');
+                                this.content = text;
+                                this.dataKey = dataKey;
+                            });
+                        }
+                        res.json().then(json => this.error = json);
+                    });
+                },
+                remove(dataKey) {
+                    fetch('/' + dataKey, {method: 'DELETE'}).then(res => {
+                        if (res.status === 200) {
+                            if (this.dataKey === dataKey) {
+                                this.dataKey = '';
+                            }
+
+                            syncStore(this.dataKeys = this.dataKeys.filter(item => item !== dataKey));
+                        }
+                        res.json().then(json => this.error = json);
+                    });
+                },
+                submit() {
+                    fetch('/' + this.dataKey, {
+                        method: 'POST',
+                        headers: {'Content-Type': this.contentType},
+                        body: this.content
+                    }).then(res => {
+                        if (res.status === 200) {
+                            return res.json().then(json => {
+                                if (json.data) {
+                                    this.dataKeys.unshift(json.data);
+                                    syncStore(this.dataKeys);
+                                }
+                                this.error = json;
+                            });
+                        }
+                        res.json().then(json => this.error = json);
+                    });
+                },
+                reset() {
+                    this.dataKey = '';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
