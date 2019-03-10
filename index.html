@@ -66,9 +66,8 @@
         padding: 0 10px;
     }
 
-    .status a {
-        color: #00e;
-        margin: 0 5px;
+    .status input {
+        width: 80px;
     }
 
     .close {
@@ -118,25 +117,30 @@
     }
 
 
-    .history a {
-        color: #2d00f8;
-        width: 200px;
+    .history span {
+        color: #88f;
         display: inline-block;
-        text-decoration: none;
         cursor: pointer;
     }
 
-    .history a:hover {
-        color: #e00;
+    .history a {
+        font-size: 14px;
+        text-decoration: none;
     }
 
-    .history a.active {
-        font-weight: bold;
+    .history a:hover,
+    .history .key:hover,
+    .history .delete:hover {
         color: #e00;
     }
 
     .history .key {
         text-align: right;
+    }
+
+    .history .key.active {
+        font-weight: bold;
+        color: #e00;
     }
 
     .history .delete {
@@ -200,11 +204,10 @@
                     <option>application/json</option>
                 </datalist>
             </div>
-            <span class="status" v-if="dataKey">
-                Update <a :href="'/' + dataKey" target="_blank">{{dataKey}}</a>
+            <span class="status">
+                Key <input v-model="dataKey" />
                 <span class="close" @click="reset()">x</span>
             </span>
-            <span class="status" v-else>Create New</span>
             <div class="content">
                 <textarea v-model="content"></textarea>
             </div>
@@ -214,8 +217,13 @@
         </div>
         <div class="history">
             <div v-for="item in dataKeys">
-                <a class="key" :class="dataKey === item ? 'active' : ''" @click="choose(item)">{{item}}</a>
-                <a class="delete" @click="remove(item)">Delete</a>
+                <span>
+                    <span class="key" :class="dataKey === item ? 'active' : ''" @click="choose(item)">
+                        {{item}}
+                    </span>
+                    <a :href="'/' + item" target="__blank">↗</a>
+                </span>
+                <span class="delete" @click="remove(item)">Delete</span>
             </div>
         </div>
         <div id="message" :class="message.type">
@@ -297,6 +305,9 @@
                                     syncStore(this.dataKeys);
                                 }
                                 this.error = json;
+                                if (this.dataKeys.indexOf(this.dataKey) < 0) {
+                                    this.dataKeys.unshift(this.dataKey);
+                                }
                             });
                         }
                         res.json().then(json => this.error = json);
